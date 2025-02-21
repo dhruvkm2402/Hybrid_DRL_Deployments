@@ -1,4 +1,4 @@
-# This repository consists of different implementations of DRL and Hybrid DRL based approaches for wheeled mobile robots
+# This repository consists of different implementations of DRL and Hybrid DRL based approaches for wheeled mobile robots 
 
 ## 1: Rough Terrain Path Tracking of an Ackermann Steered Platform using Hybrid Deep Reinforcement Learning 
 
@@ -20,7 +20,19 @@ Link: https://ieeexplore.ieee.org/document/10636992
   doi={10.1109/AIM55361.2024.10636992}}
 
 ```
+There are 3 main files:
+1) source->isaaclab_tasks->direct->hunter_hybrid->hunter_hybrid_env.py (Change path of the waypoints)
+2) source->isaaclab_assets->robots->hunter.py (Change path of the USD file of the hunter)
+3) source->isaaclab_assets->robots->USD_Hunter->hunter_aim4.usd
 
+To run the training 
+```
+./isaaclab.sh -p scripts/reinforcement_learning/rl_games/train.py --task hunter_hybrid  --num_envs 4096 --headless
+```
+To play the pretrained agent
+```
+./isaaclab.sh -p scripts/reinforcement_learning/rl_games/play.py --task hunter_hybrid  --num_envs 10 --use_last_checkpoint
+```
 
 ![Isaac Lab](docs/source/_static/isaaclab.jpg)
 
