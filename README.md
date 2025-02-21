@@ -5,7 +5,7 @@
 We demonstrate the effectiveness of using Hybrid Deep Reinforcement Learning architecture for rough terrain navigation of an ackermann-steered platform called AgileX HunterSE. The algorithm combines DRL and LQR  controller and is deployed on NVIDIA's Isaac Sim simulator. The paper has been accepted at 2024 IEEE/ASME International Conference on Advanced Intelligent Mechatronics (AIM) held in Boston, MA, USA.
 Following video shows a brief overview of the paper
 
-I hope you find this research useful and would appreciate it if you cite it - Preprint is available here with more details 
+I hope you find this research useful and would appreciate it if you cite it - Paper is available here with more details 
 Link: https://ieeexplore.ieee.org/document/10636992
 ```
 @INPROCEEDINGS{10636992,
