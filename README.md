@@ -6,7 +6,7 @@ We demonstrate the effectiveness of using Hybrid Deep Reinforcement Learning arc
 Following video shows a brief overview of the paper
 
 I hope you find this research useful and would appreciate it if you cite it - Preprint is available here with more details 
-Link: https://www.researchgate.net/publication/380245264_Rough_Terrain_Path_Tracking_of_an_Ackermann_Steered_Platform_using_Hybrid_Deep_Reinforcement_Learning
+Link: https://ieeexplore.ieee.org/document/10636992
 ```
 @INPROCEEDINGS{10636992,
   author={Mehta, Dhruv and Salvi, Ameya and Krovi, Venkat},
