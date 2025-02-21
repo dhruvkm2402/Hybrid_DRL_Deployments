@@ -119,9 +119,7 @@ class HunterHybridEnv(DirectRLEnv):
         self.scene.articulations["hunter"] = self.hunter
         self.rear_axle = RigidObject(self.cfg.object_cfg)
         self.scene.rigid_objects["rear_axle"] = self.rear_axle
-        self._imu_sensor = Imu(self.cfg.Imu_sensor)
-        self.scene.sensors["Imu_sensor"] = self._imu_sensor
-
+        
         self._num_per_row = int(np.sqrt(self.num_envs))
         num_rows = np.ceil(self.num_envs / self._num_per_row)
         num_cols = np.ceil(self.num_envs / num_rows)
