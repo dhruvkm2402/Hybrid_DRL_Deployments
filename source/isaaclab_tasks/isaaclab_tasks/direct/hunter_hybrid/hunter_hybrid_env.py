@@ -20,15 +20,15 @@ import random
 import scipy.linalg as la
 import isaaclab.envs.mdp as mdp
 from isaaclab.managers import EventTermCfg as EventTerm
-from isaacsim.util.debug_draw import _debug_draw
-draw = _debug_draw.acquire_debug_draw_interface()
+# from isaacsim.util.debug_draw import _debug_draw
+# draw = _debug_draw.acquire_debug_draw_interface()
 import math
 from isaaclab_assets.robots.hunter import HUNTER_CFG
 from .LQRController import State
 from .angle import angle_mod
 from .CubicSpline import calc_spline_course
-coordinates = np.genfromtxt('Path to your CSV file of wapoints', delimiter = ',')
-x_coords = coordinates[::10, 0] # You can change this as per requirement
+coordinates = np.genfromtxt('/home/dhruvm/Omni_New/OmniIsaacGymEnvs/omniisaacgymenvs/Waypoints/Austin_centerline2.csv', delimiter = ',')
+x_coords = coordinates[::10, 0]
 y_coords = coordinates[::10, 1]
 coordinates = np.stack((x_coords, y_coords), axis=-1) 
 
@@ -69,19 +69,27 @@ class HunterHybridEnvCfg(DirectRLEnvCfg):
         gpu_max_particle_contacts=2**20,
     )
 )
+
+    # action_noise_model: NoiseModelWithAdditiveBiasCfg = NoiseModelWithAdditiveBiasCfg(
+    #   noise_cfg=GaussianNoiseCfg(mean=0.0, std=0.05, operation="add"),
+    #   bias_noise_cfg=GaussianNoiseCfg(mean=0.0, std=0.015, operation="abs"),
+    # )
+
+    # # at every time-step add gaussian noise + bias. The bias is a gaussian sampled at reset
+    # observation_noise_model: NoiseModelWithAdditiveBiasCfg = NoiseModelWithAdditiveBiasCfg(
+    #   noise_cfg=GaussianNoiseCfg(mean=0.0, std=0.002, operation="add"),
+    #   bias_noise_cfg=GaussianNoiseCfg(mean=0.0, std=0.0001, operation="abs"),
+    # )
+
     # robot 
     robot: ArticulationCfg = HUNTER_CFG.replace(prim_path="/World/envs/env_.*/Robot")
     
-
     #scene
     scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4096, env_spacing=5.0, replicate_physics=True)
-    object_cfg: RigidObjectCfg = RigidObjectCfg(
-        prim_path="/World/envs/env_.*/Robot/RearAxle",
-    )
-
+    
     #env
     
-    decimation = 20 ## Sets the control frequency
+    decimation = 20
     episode_length_s = 200
     action_scale = 1  # [N]
     action_space = 2
@@ -117,9 +125,8 @@ class HunterHybridEnv(DirectRLEnv):
         self.scene.filter_collisions(global_prim_paths=[])
         # add articultion to scene
         self.scene.articulations["hunter"] = self.hunter
-        self.rear_axle = RigidObject(self.cfg.object_cfg)
-        self.scene.rigid_objects["rear_axle"] = self.rear_axle
         
+
         self._num_per_row = int(np.sqrt(self.num_envs))
         num_rows = np.ceil(self.num_envs / self._num_per_row)
         num_cols = np.ceil(self.num_envs / num_rows)
@@ -134,7 +141,7 @@ class HunterHybridEnv(DirectRLEnv):
 
         translations = []
         
-        ## Waypoint display for debugging
+
         for i in range(self.num_envs):
             # compute transform
             row = i // num_cols
@@ -153,18 +160,18 @@ class HunterHybridEnv(DirectRLEnv):
         sizes = [5 for _ in range(num_points)]
         
         #Loop through each environment and prepare the points for drawing
-        for env_index in range(num_envs):
-            point_list = []
+        # for env_index in range(num_envs):
+        #     point_list = []
             
-            for point_index in range(num_points):
-                # Extract x, y, and assume z as 0 for 2D points; modify if you have a z component
-                x, y = translated_coordinates_numpy[env_index, point_index]
-                z = 0.1  # Set z to 0, or you can include it if you have a 3D point
+        #     for point_index in range(num_points):
+        #         # Extract x, y, and assume z as 0 for 2D points; modify if you have a z component
+        #         x, y = translated_coordinates_numpy[env_index, point_index]
+        #         z = 0.1  # Set z to 0, or you can include it if you have a 3D point
 
-                point_list.append((x, y, z))
+        #         point_list.append((x, y, z))
 
-        #    # Draw the path for the current environment
-            draw.draw_points(point_list, colors, sizes)
+        # #    # Draw the path for the current environment
+        #     draw.draw_points(point_list, colors, sizes)
 
         
         light_cfg = sim_utils.DomeLightCfg(intensity=2000.0, color=(0.75, 0.75, 0.75))
@@ -183,17 +190,16 @@ class HunterHybridEnv(DirectRLEnv):
         
 
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
-        self.hunter_position = self.rear_axle.data.root_pos_w
+        self.hunter_position = self.hunter.data.root_pos_w
         
-        self.vel = self.rear_axle.data.root_lin_vel_b
+        self.vel = self.hunter.data.root_lin_vel_b
         
         self.actions[:,0] = actions[:,0].clone()
         self.actions[:,0] -= -1.0
         self.actions[:,0] /= 2.0
         self.actions[:,0] = 21.82*self.actions[:,0]
         self.actions[:,1] = 0.524*actions[:,1].clone() 
-        ## Uncomment to train using the HDRL method
-
+        
         # for i in range(self.num_envs):
         #     state = State(x=self.hunter_position[i, 0].cpu().numpy(), y=self.hunter_position[i, 1].cpu().numpy(), yaw=self.heading_angle_hunter[i].cpu().numpy(), 
         #                   v=self.vel[i,0].cpu().numpy())
@@ -258,13 +264,13 @@ class HunterHybridEnv(DirectRLEnv):
         #     self.actions[i,1] = torch.clamp((steer + 0.0*actions[i,1]), min=-0.524, max=0.524)
                
     def _apply_action(self) -> None:
-        ## Applying Ackermann geometry
         self.delta_out = torch.atan(0.608*torch.tan(self.actions[:,1])/
                                     (0.608 + 0.5*0.554*torch.tan(self.actions[:,1])))
         
         self.delta_in = torch.atan(0.608*torch.tan(self.actions[:,1])/
                                     (0.608 - 0.5*0.554*torch.tan(self.actions[:,1])))
-    
+        # self.delta_in = 0.0
+        # self.delta_out = 0.0
         
         front_right_steer = torch.where(self.actions[:,1]<=0, self.delta_in, self.delta_out)
         front_left_steer = torch.where(self.actions[:,1] > 0, self.delta_in, self.delta_out)
@@ -275,33 +281,39 @@ class HunterHybridEnv(DirectRLEnv):
 
     def _get_observations(self) -> dict:
         
-        self.heading_angle_hunter = self.rear_axle.data.heading_w # Yaw -pi to pi
+        self.heading_angle_hunter = self.hunter.data.heading_w # Yaw -pi to pi
         self.translated_coordinates = self.translated_coordinates.to(self.device)
         self.cyaw_torch = self.cyaw_torch.to(self.device)
         self.previous_actions = self.actions.clone()
-        coordinates_hunter = self.rear_axle.data.root_pos_w[:,0:2].unsqueeze(1)
+        coordinates_hunter = self.hunter.data.root_pos_w[:,0:2].unsqueeze(1)
             
         distances = torch.sqrt(torch.sum((coordinates_hunter - self.translated_coordinates) ** 2, dim=-1))
         self.min_distance_idx = torch.argmin(distances, dim=1)
+        
+        # min_distance_idx_1 = torch.clamp(self.min_distance_idx+1, min=0, max=self.translated_coordinates.size(1) - 1)
+        # desired_heading = self.translated_coordinates[torch.arange(distances.shape[0]), min_distance_idx_1] - \
+        #                   self.translated_coordinates[torch.arange(distances.shape[0]), self.min_distance_idx]
+        # desired_heading_angle = torch.atan2(desired_heading[:,1], desired_heading[:,0])
+        # self.heading_angle_Error = desired_heading_angle - self.heading_angle_hunter
 
         self.crosstrack_error = distances[torch.arange(distances.shape[0]), self.min_distance_idx]
         self.heading_angle_Error = -self.cyaw_torch[self.min_distance_idx] + self.heading_angle_hunter
         self.heading_angle_Error = (self.heading_angle_Error + torch.pi)%(2*torch.pi) - torch.pi
         self.crosstrack_error = torch.where(self.heading_angle_Error <= 0.0, -1.0*self.crosstrack_error, self.crosstrack_error)
      
-        quat_hunter = self.rear_axle.data.root_quat_w
+        quat_hunter = self.hunter.data.root_quat_w
         roll, _, yaw = euler_xyz_from_quat(quat_hunter) # Convert to -pi to pi
 
         obs = torch.cat(
             [
                 tensor
                 for tensor in (
-                    self.rear_axle.data.root_pos_w[:,0:2],
+                    self.hunter.data.root_pos_w[:,0:2],
                     self.crosstrack_error.unsqueeze(-1),
                     self.heading_angle_Error.unsqueeze(-1),
                     roll.unsqueeze(-1),
                     yaw.unsqueeze(-1),
-                    self.rear_axle.data.root_lin_vel_b[:,0].unsqueeze(-1),
+                    self.hunter.data.root_lin_vel_b[:,0].unsqueeze(-1),
 
                 )
                 if tensor is not None
@@ -314,25 +326,27 @@ class HunterHybridEnv(DirectRLEnv):
 
     def _get_rewards(self) -> torch.Tensor:
         #self.translated_coordinates = self.translated_coordinates.to(self.device)
-        heading_angle_hunter = self.rear_axle.data.heading_w # Yaw -pi to pi
+        heading_angle_hunter = self.hunter.data.heading_w # Yaw -pi to pi
         self.cyaw_torch = self.cyaw_torch.to(self.device)
         
-        coordinates_hunter = self.rear_axle.data.root_pos_w[:,0:2].unsqueeze(1)    
+        coordinates_hunter = self.hunter.data.root_pos_w[:,0:2].unsqueeze(1)    
         distances = torch.sqrt(torch.sum((coordinates_hunter - self.translated_coordinates) ** 2, dim=-1))
         min_distance_idx = torch.argmin(distances, dim=1)
-        
+        # min_distance_idx_1 = torch.clamp(min_distance_idx+1, min=0, max=self.translated_coordinates.size(1) - 1)
+        # desired_heading = self.translated_coordinates[torch.arange(distances.shape[0]), min_distance_idx_1] - \
+        #                   self.translated_coordinates[torch.arange(distances.shape[0]), min_distance_idx]
+        #desired_heading_angle = torch.atan2(desired_heading[:,1], desired_heading[:,0])
+        #heading_angle_Error = torch.abs(torch.abs(desired_heading_angle) - torch.abs(heading_angle_hunter))
         heading_angle_Error = heading_angle_hunter - self.cyaw_torch[min_distance_idx]
         heading_angle_Error = torch.abs((heading_angle_Error + torch.pi)%(2*torch.pi) - torch.pi)
         
         self.crosstrack_error = torch.abs(distances[torch.arange(distances.shape[0]), min_distance_idx])
-
-        ## normalizing all reward components
         self.crosstrack_error -= 0.0
         self.crosstrack_error /= 5.0
         heading_angle_Error -= 0.0
         heading_angle_Error /= math.pi
 
-        base_lin_vel = torch.abs(self.rear_axle.data.root_lin_vel_b[:,0])
+        base_lin_vel = torch.abs(self.hunter.data.root_lin_vel_b[:,0])
         base_lin_vel -= 0.0
         base_lin_vel /= 3.0
         
@@ -346,11 +360,11 @@ class HunterHybridEnv(DirectRLEnv):
         return total_reward
 
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
-        coordinates_hunter = self.rear_axle.data.root_pos_w[:,0:2].unsqueeze(1)    
+        coordinates_hunter = self.hunter.data.root_pos_w[:,0:2].unsqueeze(1)    
         distances = torch.sqrt(torch.sum((coordinates_hunter - self.translated_coordinates) ** 2, dim=-1))
         min_distance_idx = torch.argmin(distances, dim=1)
         self.crosstrack_error2 = distances[torch.arange(distances.shape[0]), min_distance_idx]
-        base_lin = self.rear_axle.data.root_lin_vel_b[:,0]
+        base_lin = self.hunter.data.root_lin_vel_b[:,0]
         time_out = self.episode_length_buf >= self.max_episode_length - 1
         hunter_reset_vel = torch.where(base_lin <= 0.01, 1.0, 0.0).bool()
         hunter_reset_crosstrack = torch.where(self.crosstrack_error2 >= 5.0, 1.0, 0.0).bool()
