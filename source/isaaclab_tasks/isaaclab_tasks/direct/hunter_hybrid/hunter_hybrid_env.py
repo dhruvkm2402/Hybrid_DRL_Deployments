@@ -27,7 +27,7 @@ from isaaclab_assets.robots.hunter import HUNTER_CFG
 from .LQRController import State
 from .angle import angle_mod
 from .CubicSpline import calc_spline_course
-coordinates = np.genfromtxt('/home/dhruvm/Omni_New/OmniIsaacGymEnvs/omniisaacgymenvs/Waypoints/Austin_centerline2.csv', delimiter = ',')
+coordinates = np.genfromtxt('Your Path/Austin_centerline2.csv', delimiter = ',')
 x_coords = coordinates[::10, 0]
 y_coords = coordinates[::10, 1]
 coordinates = np.stack((x_coords, y_coords), axis=-1) 
