@@ -34,8 +34,6 @@ To play the pretrained agent
 ./isaaclab.sh -p scripts/reinforcement_learning/rl_games/play.py --task hunter_hybrid  --num_envs 10 --use_last_checkpoint
 ```
 
-![Isaac Lab](docs/source/_static/isaaclab.jpg)
-
 ---
 
 # Isaac Lab
